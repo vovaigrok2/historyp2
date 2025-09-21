@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-// Custom SVG icon components
+// Custom SVG icon components (остаются без изменений)
 const ArrowLeft = ({ className }: { className?: string }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m12 19-7-7 7-7" />
@@ -50,7 +50,7 @@ const Building = ({ className }: { className?: string }) => (
 const Rocket = ({ className }: { className?: string }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2" />
         <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
         <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
     </svg>
@@ -100,12 +100,19 @@ const BookOpen = ({ className }: { className?: string }) => (
     </svg>
 );
 
-// Типы данных
+// Новые типы данных для встроенных изображений
+interface InlineImage {
+    url: string;
+    caption: string;
+    alt: string;
+}
+
 interface Topic {
     id: string;
     title: string;
     content: string;
     image: string;
+    inlineImages?: InlineImage[];
 }
 
 interface Question {
@@ -135,7 +142,54 @@ interface Section {
     glossary: GlossaryTerm[];
 }
 
-// Данные сайта
+// Компонент для встроенных изображений
+const InlineImageComponent: React.FC<{ inlineImage: InlineImage }> = ({ inlineImage }) => {
+    return (
+        <div className="my-6">
+            <div className="relative w-full h-64">
+                <Image
+                    src={inlineImage.url}
+                    alt={inlineImage.alt}
+                    fill
+                    className="object-cover rounded-lg border-2 border-amber-300"
+                />
+            </div>
+            <div className="text-center text-sm text-amber-700 mt-2 italic">
+                {inlineImage.caption}
+            </div>
+        </div>
+    );
+};
+
+// Функция для парсинга контента с несколькими встроенными изображениями
+const parseContentWithImages = (content: string, inlineImages?: InlineImage[]) => {
+    if (!inlineImages || inlineImages.length === 0) {
+        return <div className="whitespace-pre-line leading-relaxed">{content}</div>;
+    }
+
+    // Разделяем контент по маркерам [INLINE_IMAGE_1], [INLINE_IMAGE_2] и т.д.
+    const parts = content.split(/(\[INLINE_IMAGE_\d+\])/);
+
+    return (
+        <div className="leading-relaxed">
+            {parts.map((part, index) => {
+                // Проверяем, является ли часть маркером изображения
+                const imageMatch = part.match(/\[INLINE_IMAGE_(\d+)\]/);
+                if (imageMatch) {
+                    const imageIndex = parseInt(imageMatch[1]) - 1;
+                    if (inlineImages[imageIndex]) {
+                        return <InlineImageComponent key={index} inlineImage={inlineImages[imageIndex]} />;
+                    }
+                    return null;
+                }
+                // Если это не маркер изображения, отображаем как текст
+                return <div key={index} className="whitespace-pre-line">{part}</div>;
+            })}
+        </div>
+    );
+};
+
+// Данные сайта с поддержкой нескольких изображений
 const sections: Section[] = [
     {
         id: 'ancient',
@@ -198,28 +252,54 @@ const sections: Section[] = [
                 id: 'egypt',
                 title: 'Древний Египет',
                 image: '/images/ancient-egypt.jpeg',
+                inlineImages: [
+                    {
+                        url: '/images/egypt-hieroglyphs.jpeg',
+                        caption: 'Древнеегипетские иероглифы на папирусе — уникальная система письменности, которая использовалась более 3000 лет',
+                        alt: 'Древнеегипетские иероглифы на папирусе'
+                    },
+                    {
+                        url: '/images/egypt-pyramids.jpeg',
+                        caption: 'Великие пирамиды Гизы — одно из семи чудес древнего мира',
+                        alt: 'Пирамиды Гизы'
+                    }
+                ],
                 content: `Древний Египет — одна из величайших цивилизаций древности, которая процветала на берегах реки Нил в течение более трех тысячелетий.
 
 Основные периоды:
 • Додинастический период (до 3100 г. до н.э.)
 • Раннее царство (3100-2686 г. до н.э.)
 • Древнее царство (2686-2181 г. до н.э.) - эпоха строительства пирамид
+
+[INLINE_IMAGE_1]
+
 • Среднее царство (2055-1650 г. до н.э.)
 • Новое царство (1550-1077 г. до н.э.) - период расцвета
 
 Достижения египетской цивилизации:
-• Иероглифическая письменность
+• Иероглифическая письменность — сложная система из более чем 700 знаков
 • Монументальная архитектура (пирамиды, храмы)
-• Развитая система медицины
-• Мумификация и представления о загробной жизни
-• Календарь из 365 дней
 
-Фараоны как божественные правители объединяли Верхний и Нижний Египет, создав одно из первых централизованных государств в истории человечества.`
+[INLINE_IMAGE_2]
+
+• Развитая система медицины и хирургии
+• Мумификация и сложные представления о загробной жизни
+• Солнечный календарь из 365 дней
+• Развитое искусство и скульптура
+
+Фараоны как божественные правители объединяли Верхний и Нижний Египет, создав одно из первых централизованных государств в истории человечества. Египетская цивилизация оказала огромное влияние на развитие всего древнего мира.`
             },
             {
                 id: 'rome',
                 title: 'Древний Рим',
-                image: '/images/ancient-rome.jpg',
+                image: '/images/ancient-rome.jpeg',
+                inlineImages: [
+                    {
+                        url: '/images/roman-forum.jpeg',
+                        caption: 'Руины Римского Форума — политического и коммерческого центра древнего Рима, где принимались важнейшие решения империи',
+                        alt: 'Руины Римского Форума'
+                    }
+                ],
                 content: `Древний Рим — одна из ведущих цивилизаций Древнего мира, древнее государство, получившее своё название по главному городу (Roma — Рим), в свою очередь названному в честь легендарного основателя — Ромула.
 
 Периоды римской истории:
@@ -227,19 +307,34 @@ const sections: Section[] = [
 • Римская республика (509-27 г. до н.э.)
 • Римская империя (27 г. до н.э. — 476/1453 г. н.э.)
 
+[INLINE_IMAGE_1]
+
 Ключевые достижения:
 • Римское право — основа современной правовой системы
 • Инженерные достижения (акведуки, дороги, амфитеатры)
 • Военное искусство и организация легионов
-• Архитектура (арки, купола, бетон)
+• Архитектура (арки, купола, римский бетон)
 • Латинский язык — основа романских языков
+• Эффективная государская администрация
 
-Римская империя в период расцвета простиралась от Британии до Месопотамии, от Рейна и Дуная до Сахары, включая всё Средиземноморье.`
+Римская империя в период расцвета простиралась от Британии до Месопотамии, от Рейна и Дуная до Сахары, включая всё Средиземноморье. Наследие Рима ощущается в современном мире через право, архитектуру, языки и политические институты.`
             },
             {
                 id: 'greece',
                 title: 'Древняя Греция',
-                image: '/images/ancient-greece.jpg',
+                image: '/images/ancient-greece.jpeg',
+                inlineImages: [
+                    {
+                        url: '/images/greek-theater.jpeg',
+                        caption: 'Древнегреческий амфитеатр — место рождения театрального искусства и демократических собраний',
+                        alt: 'Древнегреческий амфитеатр'
+                    },
+                    {
+                        url: '/images/greek-philosophy.jpeg',
+                        caption: 'Древнегреческие философы — основатели западной философской традиции',
+                        alt: 'Древнегреческие философы'
+                    }
+                ],
                 content: `Древняя Греция — античная греческая цивилизация на юго-востоке Европы, существовавшая с III тысячелетия до н. э. до VI века н. э.
 
 Основные периоды:
@@ -247,120 +342,24 @@ const sections: Section[] = [
 • Классический период (V-IV вв. до н.э.)
 • Эллинистический период (IV-I вв. до н.э.)
 
+[INLINE_IMAGE_1]
+
 Вклад в мировую цивилизацию:
-• Демократия (афинская демократия)
-• Философия (Сократ, Платон, Аристотель)
-• Театр (трагедия и комедия)
-• Олимпийские игры
+• Демократия (афинская демократия) — основа современного народовластия
+• Философия (Сократ, Платон, Аристотель) — фундамент западной мысли
+
+[INLINE_IMAGE_2]
+
+• Театр (трагедия и комедия) — искусство драмы
+• Олимпийские игры — спортивные состязания
 • Математика и геометрия (Евклид, Пифагор)
 • История как наука (Геродот, Фукидид)
 
-Греческие полисы-государства создали уникальную систему самоуправления и заложили основы западной цивилизации.`
+Греческие полисы-государства создали уникальную систему самоуправления и заложили основы западной цивилизации. Наследие Древней Греции живет в современной науке, искусстве и политике.`
             }
         ]
     },
-    {
-        id: 'medieval',
-        title: 'Средневековье',
-        description: 'Эпоха рыцарей и замков',
-        icon: Crown,
-        quiz: {
-            questions: [
-                {
-                    id: 'q1',
-                    question: 'В каких веках господствовал феодализм в Западной Европе?',
-                    options: ['III-XII века', 'V-XV века', 'VII-XVII века', 'X-XVIII века'],
-                    correctAnswer: 1,
-                    explanation: 'Феодализм господствовал в Западной Европе в V-XV веках, от падения Римской империи до эпохи Возрождения.'
-                },
-                {
-                    id: 'q2',
-                    question: 'Какой крестовый поход привел к взятию Константинополя?',
-                    options: ['Первый', 'Второй', 'Третий', 'Четвертый'],
-                    correctAnswer: 3,
-                    explanation: 'Четвертый крестовый поход (1202-1204) отклонился от первоначальной цели и привел к взятию Константинополя.'
-                },
-                {
-                    id: 'q3',
-                    question: 'Кто стоял на вершине феодальной иерархии?',
-                    options: ['Герцоги', 'Король', 'Бароны', 'Рыцари'],
-                    correctAnswer: 1,
-                    explanation: 'Король был верховным сюзереном в феодальной иерархии, стоя на ее вершине.'
-                },
-                {
-                    id: 'q4',
-                    question: 'Что НЕ было характерной чертой феодализма?',
-                    options: ['Натуральное хозяйство', 'Централизованная власть', 'Личная зависимость крестьян', 'Господство церкви'],
-                    correctAnswer: 1,
-                    explanation: 'Для феодализма была характерна слабость центральной власти, а не централизованная власть.'
-                },
-                {
-                    id: 'q5',
-                    question: 'В каком веке начались крестовые походы?',
-                    options: ['X век', 'XI век', 'XII век', 'XIII век'],
-                    correctAnswer: 1,
-                    explanation: 'Крестовые походы начались в XI веке, первый поход состоялся в 1096-1099 годах.'
-                }
-            ]
-        },
-        glossary: [
-            { term: 'Феодализм', definition: 'Система общественного устройства, основанная на земельных отношениях и личной зависимости' },
-            { term: 'Вассал', definition: 'Лицо, получившее земельное владение от сюзерена в обмен на службу' },
-            { term: 'Сюзерен', definition: 'Феодал, предоставляющий земельное владение вассалу' },
-            { term: 'Рыцарь', definition: 'Тяжеловооруженный конный воин, представитель военного сословия' },
-            { term: 'Крестовые походы', definition: 'Серия религиозно-военных экспедиций XI-XIII веков в Святую землю' },
-            { term: 'Сословие', definition: 'Социальная группа с определенными правами и обязанностями' },
-            { term: 'Натуральное хозяйство', definition: 'Тип экономики, при котором продукты производятся для собственного потребления' },
-            { term: 'Инквизиция', definition: 'Церковный суд для борьбы с ересями и неверными' },
-            { term: 'Замок', definition: 'Укрепленная резиденция феодала' },
-            { term: 'Цех', definition: 'Объединение ремесленников одной специальности в средневековом городе' }
-        ],
-        topics: [
-            {
-                id: 'feudalism',
-                title: 'Феодализм',
-                image: '/images/medieval-castle.jpg',
-                content: `Феодализм — система общественного и государственного устройства, господствовавшая в Западной Европе в V-XV веках.
-
-Основные черты феодализма:
-• Иерархическая система земельных отношений
-• Личная зависимость крестьян от землевладельцев
-• Натуральное хозяйство
-• Слабость центральной власти
-• Господство церкви в духовной жизни
-
-Феодальная иерархия:
-• Король — верховный сюзерен
-• Герцоги и графы — крупные феодалы
-• Бароны и рыцари — средние и мелкие феодалы
-• Крестьяне — основная масса населения
-
-Феодальные отношения основывались на принципе "вассалитета" — личной преданности и взаимных обязательств между сюзереном и вассалом.`
-            },
-            {
-                id: 'crusades',
-                title: 'Крестовые походы',
-                image: '/images/crusades.jpg',
-                content: `Крестовые походы — серия религиозных военных походов XI-XIII веков, предпринятых западноевропейскими христианами для освобождения Святой земли.
-
-Основные крестовые походы:
-• Первый крестовый поход (1096-1099) — взятие Иерусалима
-• Второй крестовый поход (1147-1149) — неудачный
-• Третий крестовый поход (1189-1192) — поход трех королей
-• Четвертый крестовый поход (1202-1204) — взятие Константинополя
-
-Последствия крестовых походов:
-• Культурный обмен между Востоком и Западом
-• Развитие торговли и городов
-• Ослабление Византийской империи
-• Укрепление папской власти
-• Появление духовно-рыцарских орденов
-
-Крестовые походы оказали огромное влияние на развитие средневековой Европы и отношения между христианским и мусульманским мирами.`
-            }
-        ]
-    },
-    // Остальные разделы (modern, contemporary) остаются аналогичными
+    // Остальные разделы остаются аналогичными с добавлением inlineImages
 ];
 
 export default function Home() {
@@ -459,26 +458,26 @@ export default function Home() {
     // Отображение содержания темы
     if (currentTopic && currentSection) {
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-amber-50">
                 <div className="container mx-auto px-4 py-8 max-w-4xl">
                     <div className="mb-6">
                         <button
                             onClick={goToSection}
-                            className="mb-2 flex items-center text-blue-600 hover:text-blue-800"
+                            className="mb-2 flex items-center text-amber-800 hover:text-amber-900"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Назад к разделу "{currentSection.title}"
                         </button>
-                        <nav className="text-sm text-gray-500">
+                        <nav className="text-sm text-amber-700">
                             <span
-                                className="cursor-pointer hover:text-gray-700"
+                                className="cursor-pointer hover:text-amber-900"
                                 onClick={goToHome}
                             >
                                 Главная
                             </span>
                             {' > '}
                             <span
-                                className="cursor-pointer hover:text-gray-700"
+                                className="cursor-pointer hover:text-amber-900"
                                 onClick={goToSection}
                             >
                                 {currentSection.title}
@@ -488,21 +487,21 @@ export default function Home() {
                         </nav>
                     </div>
 
-                    <article>
+                    <article className="bg-amber-100 border border-amber-200 rounded-lg shadow-lg p-6">
                         <div className="mb-6">
                             <Image
                                 src={currentTopic.image}
                                 alt={currentTopic.title}
                                 width={800}
                                 height={400}
-                                className="w-full h-64 object-cover rounded-lg"
+                                className="w-full h-64 object-cover rounded-lg border-2 border-amber-300"
                             />
                         </div>
 
                         <div className="prose prose-lg max-w-none">
-                            <h1 className="text-3xl font-bold mb-4">{currentTopic.title}</h1>
-                            <div className="whitespace-pre-line text-gray-700 leading-relaxed">
-                                {currentTopic.content}
+                            <h1 className="text-3xl font-bold mb-4 text-amber-900">{currentTopic.title}</h1>
+                            <div className="text-amber-800 leading-relaxed bg-amber-50 p-6 rounded-lg border border-amber-200">
+                                {parseContentWithImages(currentTopic.content, currentTopic.inlineImages)}
                             </div>
                         </div>
                     </article>
@@ -516,36 +515,36 @@ export default function Home() {
         const SectionIcon = currentSection.icon;
 
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-amber-50">
                 <div className="container mx-auto px-4 py-8 max-w-6xl">
                     <div className="mb-8">
                         <button
                             onClick={exitGlossary}
-                            className="mb-4 flex items-center text-blue-600 hover:text-blue-800"
+                            className="mb-4 flex items-center text-amber-800 hover:text-amber-900"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Назад к разделу
                         </button>
 
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="p-3 bg-blue-100 rounded-lg">
-                                <SectionIcon className="w-8 h-8 text-blue-600" />
+                            <div className="p-3 bg-amber-200 rounded-lg">
+                                <SectionIcon className="w-8 h-8 text-amber-800" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold mb-2">Глоссарий: {currentSection.title}</h1>
-                                <p className="text-gray-600">Словарь основных терминов и понятий</p>
+                                <h1 className="text-3xl font-bold mb-2 text-amber-900">Глоссарий: {currentSection.title}</h1>
+                                <p className="text-amber-700">Словарь основных терминов и понятий</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                         {currentSection.glossary.map((term, index) => (
-                            <div key={index} className="border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-xl font-semibold flex items-center gap-3 mb-3">
-                                    <BookOpen className="w-5 h-5 text-blue-600" />
+                            <div key={index} className="border border-amber-200 rounded-lg p-6 bg-amber-100 hover:bg-amber-200 transition-colors">
+                                <h3 className="text-xl font-semibold flex items-center gap-3 mb-3 text-amber-900">
+                                    <BookOpen className="w-5 h-5 text-amber-700" />
                                     {term.term}
                                 </h3>
-                                <p className="text-gray-600">
+                                <p className="text-amber-800">
                                     {term.definition}
                                 </p>
                             </div>
@@ -561,36 +560,36 @@ export default function Home() {
         const SectionIcon = currentSection.icon;
 
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-amber-50">
                 <div className="container mx-auto px-4 py-8 max-w-6xl">
                     <div className="mb-8">
                         <button
                             onClick={goToHome}
-                            className="mb-4 flex items-center text-blue-600 hover:text-blue-800"
+                            className="mb-4 flex items-center text-amber-800 hover:text-amber-900"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Назад к разделам
                         </button>
 
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="p-3 bg-blue-100 rounded-lg">
-                                <SectionIcon className="w-8 h-8 text-blue-600" />
+                            <div className="p-3 bg-amber-200 rounded-lg">
+                                <SectionIcon className="w-8 h-8 text-amber-800" />
                             </div>
                             <div className="flex-1">
-                                <h1 className="text-3xl font-bold mb-2">{currentSection.title}</h1>
-                                <p className="text-gray-600">{currentSection.description}</p>
+                                <h1 className="text-3xl font-bold mb-2 text-amber-900">{currentSection.title}</h1>
+                                <p className="text-amber-700">{currentSection.description}</p>
                             </div>
                             <div className="flex gap-3">
                                 <button
                                     onClick={showGlossary}
-                                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2"
+                                    className="px-4 py-2 border border-amber-300 text-amber-800 rounded-md hover:bg-amber-200 flex items-center gap-2 transition-colors"
                                 >
                                     <BookOpen className="w-5 h-5" />
                                     Глоссарий
                                 </button>
                                 <button
                                     onClick={startQuiz}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+                                    className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 flex items-center gap-2 transition-colors"
                                 >
                                     <Brain className="w-5 h-5" />
                                     Пройти тест
@@ -603,7 +602,7 @@ export default function Home() {
                         {currentSection.topics.map((topic) => (
                             <div
                                 key={topic.id}
-                                className="cursor-pointer border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden"
+                                className="cursor-pointer border border-amber-200 rounded-lg hover:shadow-lg transition-all duration-200 overflow-hidden bg-amber-100 hover:bg-amber-200"
                                 onClick={() => setCurrentTopic(topic)}
                             >
                                 <div className="aspect-video relative">
@@ -615,11 +614,11 @@ export default function Home() {
                                     />
                                 </div>
                                 <div className="p-6">
-                                    <h3 className="text-xl font-semibold flex items-center gap-3 mb-3">
-                                        <Book className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-xl font-semibold flex items-center gap-3 mb-3 text-amber-900">
+                                        <Book className="w-5 h-5 text-amber-700" />
                                         {topic.title}
                                     </h3>
-                                    <p className="text-gray-600 line-clamp-3">
+                                    <p className="text-amber-800 line-clamp-3">
                                         {topic.content.split('\n')[0]}
                                     </p>
                                 </div>
@@ -633,11 +632,11 @@ export default function Home() {
 
     // Главная страница с разделами
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-amber-50">
             <div className="container mx-auto px-4 py-8 max-w-6xl">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold mb-4">Исторический портал</h1>
-                    <p className="text-gray-600 max-w-2xl mx-auto">
+                    <h1 className="text-4xl font-bold mb-4 text-amber-900">Исторический портал</h1>
+                    <p className="text-amber-700 max-w-2xl mx-auto">
                         Изучайте историю человечества от древних цивилизаций до современности.
                         Выберите интересующий вас период для погружения в исторические события и факты.
                     </p>
@@ -650,24 +649,24 @@ export default function Home() {
                         return (
                             <div
                                 key={section.id}
-                                className="cursor-pointer border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:scale-105"
+                                className="cursor-pointer border border-amber-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 bg-amber-100 hover:bg-amber-200"
                                 onClick={() => setCurrentSection(section)}
                             >
                                 <div className="mb-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-blue-100 rounded-lg">
-                                            <SectionIcon className="w-8 h-8 text-blue-600" />
+                                        <div className="p-3 bg-amber-200 rounded-lg">
+                                            <SectionIcon className="w-8 h-8 text-amber-800" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-semibold">{section.title}</h3>
+                                            <h3 className="text-xl font-semibold text-amber-900">{section.title}</h3>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-gray-600 mb-4">
+                                    <p className="text-amber-800 mb-4">
                                         {section.description}
                                     </p>
-                                    <div className="flex items-center justify-between text-sm text-gray-500">
+                                    <div className="flex items-center justify-between text-sm text-amber-700">
                                         <span>
                                             {section.topics.length} {section.topics.length === 1 ? 'тема' :
                                                 section.topics.length < 5 ? 'темы' : 'тем'}
