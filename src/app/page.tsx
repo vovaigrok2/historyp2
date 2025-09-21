@@ -318,9 +318,48 @@ const sections: Section[] = [
 • Эффективная государская администрация
 
 Римская империя в период расцвета простиралась от Британии до Месопотамии, от Рейна и Дуная до Сахары, включая всё Средиземноморье. Наследие Рима ощущается в современном мире через право, архитектуру, языки и политические институты.`
+            },
+            {
+                id: 'greece',
+                title: 'Древняя Греция',
+                image: '/images/ancient-greece.jpeg',
+                inlineImages: [
+                    {
+                        url: '/images/greek-theater.jpeg',
+                        caption: 'Древнегреческий амфитеатр — место рождения театрального искусства и демократических собраний',
+                        alt: 'Древнегреческий амфитеатр'
+                    },
+                    {
+                        url: '/images/greek-philosophy.jpeg',
+                        caption: 'Древнегреческие философы — основатели западной философской традиции',
+                        alt: 'Древнегреческие философы'
+                    }
+                ],
+                content: `Древняя Греция — античная греческая цивилизация на юго-востоке Европы, существовавшая с III тысячелетия до н. э. до VI века н. э.
+
+Основные периоды:
+• Архаический период (VIII-VI вв. до н.э.)
+• Классический период (V-IV вв. до н.э.)
+• Эллинистический период (IV-I вв. до н.э.)
+
+[INLINE_IMAGE_1]
+
+Вклад в мировую цивилизацию:
+• Демократия (афинская демократия) — основа современного народовластия
+• Философия (Сократ, Платон, Аристотель) — фундамент западной мысли
+
+[INLINE_IMAGE_2]
+
+• Театр (трагедия и комедия) — искусство драмы
+• Олимпийские игры — спортивные состязания
+• Математика и геометрия (Евклид, Пифагор)
+• История как наука (Геродот, Фукидид)
+
+Греческие полисы-государства создали уникальную систему самоуправления и заложили основы западной цивилизации. Наследие Древней Греции живет в современной науке, искусстве и политике.`
             }
         ]
-    }
+    },
+    // Остальные разделы остаются аналогичными с добавлением inlineImages
 ];
 
 export default function Home() {
@@ -416,6 +455,62 @@ export default function Home() {
         return correct;
     };
 
+    // Отображение содержания темы
+    if (currentTopic && currentSection) {
+        return (
+            <div className="min-h-screen bg-amber-50">
+                <div className="container mx-auto px-4 py-8 max-w-4xl">
+                    <div className="mb-6">
+                        <button
+                            onClick={goToSection}
+                            className="mb-2 flex items-center text-amber-800 hover:text-amber-900"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Назад к разделу "{currentSection.title}"
+                        </button>
+                        <nav className="text-sm text-amber-700">
+                            <span
+                                className="cursor-pointer hover:text-amber-900"
+                                onClick={goToHome}
+                            >
+                                Главная
+                            </span>
+                            {' > '}
+                            <span
+                                className="cursor-pointer hover:text-amber-900"
+                                onClick={goToSection}
+                            >
+                                {currentSection.title}
+                            </span>
+                            {' > '}
+                            <span>{currentTopic.title}</span>
+                        </nav>
+                    </div>
+
+                    <article className="bg-amber-100 border border-amber-200 rounded-lg shadow-lg p-6">
+                        <div className="mb-6">
+                            <Image
+                                src={currentTopic.image}
+                                alt={currentTopic.title}
+                                width={800}
+                                height={400}
+                                className="w-full h-64 object-cover rounded-lg border-2 border-amber-300"
+                            />
+                        </div>
+
+                        <div className="prose prose-lg max-w-none">
+                            <h1 className="text-3xl font-bold mb-4 text-amber-900">{currentTopic.title}</h1>
+                            <div className="text-amber-800 leading-relaxed bg-amber-50 p-6 rounded-lg border border-amber-200">
+                                {parseContentWithImages(currentTopic.content, currentTopic.inlineImages)}
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        );
+    }
+
+
     // Отображение теста
     if (currentSection && isQuizMode) {
         const SectionIcon = currentSection.icon;
@@ -438,7 +533,7 @@ export default function Home() {
                             </button>
                         </div>
 
-                        <div className="bg-amber-100 border border-amber-200 rounded-lg shadow-lg p-6 text-center">
+                        <div className="border border-amber-200 rounded-lg p-6 bg-amber-100 text-center">
                             <div className="flex items-center justify-center gap-3 mb-4">
                                 <div className="p-3 bg-amber-200 rounded-lg">
                                     <SectionIcon className="w-8 h-8 text-amber-800" />
@@ -453,21 +548,23 @@ export default function Home() {
                                 {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
                             </div>
 
-                            <div className="space-y-2 mb-4">
+                            <div className="space-y-2">
                                 <p className="text-amber-800">Ваш результат:</p>
                                 <div className="flex items-center justify-center gap-2">
                                     <span className="text-3xl font-semibold text-amber-900">{score}</span>
                                     <span className="text-amber-700">из {questions.length}</span>
-                                    <span className={`px-2 py-1 rounded text-sm ${percentage >= 80 ? 'bg-green-200 text-green-800' :
-                                            percentage >= 60 ? 'bg-yellow-200 text-yellow-800' :
-                                                'bg-red-200 text-red-800'
+                                    <span className={`px-2 py-1 rounded-full text-sm ${percentage >= 80
+                                        ? 'bg-green-200 text-green-800'
+                                        : percentage >= 60
+                                            ? 'bg-yellow-200 text-yellow-800'
+                                            : 'bg-red-200 text-red-800'
                                         }`}>
                                         {percentage}%
                                     </span>
                                 </div>
                             </div>
 
-                            <p className="text-amber-700 mb-6">
+                            <p className="text-amber-700 mt-4">
                                 {percentage >= 80
                                     ? 'Отличный результат! Вы хорошо знаете этот исторический период.'
                                     : percentage >= 60
@@ -476,30 +573,30 @@ export default function Home() {
                                 }
                             </p>
 
-                            <div className="space-y-3 mb-6">
+                            <div className="space-y-3 mt-6">
                                 {questions.map((question, index) => {
                                     const userAnswer = userAnswers[index];
                                     const isCorrect = userAnswer === question.correctAnswer;
 
                                     return (
-                                        <div key={question.id} className="text-left p-4 border border-amber-200 rounded-lg bg-white">
+                                        <div key={question.id} className="text-left p-4 border border-amber-200 rounded-lg bg-amber-50">
                                             <div className="flex items-start gap-3 mb-2">
                                                 {isCorrect ? (
-                                                    <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                                                 ) : (
-                                                    <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                                    <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                                                 )}
                                                 <div className="flex-1">
-                                                    <p className="mb-2 text-amber-900 font-medium">{question.question}</p>
+                                                    <p className="mb-2 font-medium text-amber-900">{question.question}</p>
                                                     <p className="text-sm text-amber-700">
                                                         Ваш ответ: {question.options[userAnswer]}
                                                     </p>
                                                     {!isCorrect && (
-                                                        <p className="text-sm text-green-600">
+                                                        <p className="text-sm text-green-700 mt-1">
                                                             Правильный ответ: {question.options[question.correctAnswer]}
                                                         </p>
                                                     )}
-                                                    <p className="text-sm text-amber-600 mt-1">
+                                                    <p className="text-sm text-amber-600 mt-2">
                                                         {question.explanation}
                                                     </p>
                                                 </div>
@@ -509,12 +606,12 @@ export default function Home() {
                                 })}
                             </div>
 
-                            <div className="flex gap-3 justify-center">
+                            <div className="flex gap-3 justify-center pt-6">
                                 <button
                                     onClick={restartQuiz}
-                                    className="px-4 py-2 border border-amber-300 text-amber-800 rounded-md hover:bg-amber-200 flex items-center gap-2 transition-colors"
+                                    className="px-4 py-2 border border-amber-300 text-amber-800 rounded-md hover:bg-amber-200 flex items-center transition-colors"
                                 >
-                                    <RotateCcw className="w-4 h-4" />
+                                    <RotateCcw className="w-4 h-4 mr-2" />
                                     Пройти еще раз
                                 </button>
                                 <button
@@ -548,7 +645,7 @@ export default function Home() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-xl font-semibold text-amber-900">Тест: {currentSection.title}</h2>
-                                <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded text-sm">
+                                <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-md text-sm">
                                     {currentQuestion + 1} из {questions.length}
                                 </span>
                             </div>
@@ -561,42 +658,83 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className="bg-amber-100 border border-amber-200 rounded-lg shadow-lg">
-                        <div className="bg-gradient-to-r from-amber-200 to-amber-100 border-b border-amber-300 p-6">
-                            <h3 className="text-xl font-semibold text-amber-900">{currentQ.question}</h3>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div className="space-y-3">
-                                {currentQ.options.map((option, index) => (
-                                    <button
-                                        key={index}
-                                        className={`w-full text-left p-4 rounded-md transition-all duration-200 ${selectedAnswer === index
-                                                ? 'bg-amber-600 text-white shadow-md transform scale-[1.02]'
-                                                : 'bg-white text-amber-900 border border-amber-200 hover:bg-amber-50 hover:border-amber-300'
-                                            }`}
-                                        onClick={() => selectAnswer(index)}
-                                    >
-                                        <span className="mr-3 font-bold">
-                                            {String.fromCharCode(65 + index)}.
-                                        </span>
-                                        {option}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="flex justify-end pt-4">
+                    <div className="border border-amber-200 rounded-lg p-6 bg-amber-100">
+                        <h3 className="text-xl font-semibold mb-6 text-amber-900">{currentQ.question}</h3>
+                        <div className="space-y-3">
+                            {currentQ.options.map((option, index) => (
                                 <button
-                                    onClick={nextQuestion}
-                                    disabled={selectedAnswer === null}
-                                    className={`px-6 py-2 rounded-md transition-colors ${selectedAnswer === null
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : 'bg-amber-600 text-white hover:bg-amber-700'
+                                    key={index}
+                                    className={`w-full text-left p-4 rounded-md border transition-all ${selectedAnswer === index
+                                        ? 'border-amber-600 bg-amber-200 text-amber-900'
+                                        : 'border-amber-300 hover:border-amber-400 hover:bg-amber-200 text-amber-800'
                                         }`}
+                                    onClick={() => selectAnswer(index)}
                                 >
-                                    {currentQuestion === questions.length - 1 ? 'Завершить тест' : 'Следующий вопрос'}
+                                    <span className="font-semibold mr-3">
+                                        {String.fromCharCode(65 + index)}.
+                                    </span>
+                                    {option}
                                 </button>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end pt-6">
+                            <button
+                                onClick={nextQuestion}
+                                disabled={selectedAnswer === null}
+                                className={`px-6 py-2 rounded-md transition-colors ${selectedAnswer === null
+                                    ? 'bg-amber-300 text-amber-500 cursor-not-allowed'
+                                    : 'bg-amber-600 text-white hover:bg-amber-700'
+                                    }`}
+                            >
+                                {currentQuestion === questions.length - 1 ? 'Завершить тест' : 'Следующий вопрос'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Отображение глоссария
+    if (currentSection && isGlossaryMode) {
+        const SectionIcon = currentSection.icon;
+
+        return (
+            <div className="min-h-screen bg-amber-50">
+                <div className="container mx-auto px-4 py-8 max-w-6xl">
+                    <div className="mb-8">
+                        <button
+                            onClick={exitGlossary}
+                            className="mb-4 flex items-center text-amber-800 hover:text-amber-900"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Назад к разделу
+                        </button>
+
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="p-3 bg-amber-200 rounded-lg">
+                                <SectionIcon className="w-8 h-8 text-amber-800" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold mb-2 text-amber-900">Глоссарий: {currentSection.title}</h1>
+                                <p className="text-amber-700">Словарь основных терминов и понятий</p>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {currentSection.glossary.map((term, index) => (
+                            <div key={index} className="border border-amber-200 rounded-lg p-6 bg-amber-100 hover:bg-amber-200 transition-colors">
+                                <h3 className="text-xl font-semibold flex items-center gap-3 mb-3 text-amber-900">
+                                    <BookOpen className="w-5 h-5 text-amber-700" />
+                                    {term.term}
+                                </h3>
+                                <p className="text-amber-800">
+                                    {term.definition}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -648,7 +786,6 @@ export default function Home() {
                                 </button>
                             </div>
                         </div>
-                        {/* ИЗМЕНЕНИЯ ЗАКАНЧИВАЮТСЯ ЗДЕСЬ */}
                     </div>
 
                     <div className="grid gap-6 md:grid-cols-2">
