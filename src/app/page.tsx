@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-// Custom SVG icon components (остаются без изменений)
+// Custom SVG icon components
 const ArrowLeft = ({ className }: { className?: string }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m12 19-7-7 7-7" />
@@ -100,7 +100,44 @@ const BookOpen = ({ className }: { className?: string }) => (
     </svg>
 );
 
-// Новые типы данных для встроенных изображений
+// Типы данных для разных видов вопросов
+type QuestionType = 'multiple-choice' | 'text-input' | 'matching';
+
+interface BaseQuestion {
+    id: string;
+    question: string;
+    type: QuestionType;
+    explanation: string;
+}
+
+interface MultipleChoiceQuestion extends BaseQuestion {
+    type: 'multiple-choice';
+    options: string[];
+    correctAnswer: number;
+}
+
+interface TextInputQuestion extends BaseQuestion {
+    type: 'text-input';
+    correctAnswer: string;
+    placeholder?: string;
+}
+
+interface MatchingPair {
+    left: string;
+    right: string;
+}
+
+interface MatchingQuestion extends BaseQuestion {
+    type: 'matching';
+    pairs: MatchingPair[];
+}
+
+type Question = MultipleChoiceQuestion | TextInputQuestion | MatchingQuestion;
+
+interface Quiz {
+    questions: Question[];
+}
+
 interface InlineImage {
     url: string;
     caption: string;
@@ -113,18 +150,6 @@ interface Topic {
     content: string;
     image: string;
     inlineImages?: InlineImage[];
-}
-
-interface Question {
-    id: string;
-    question: string;
-    options: string[];
-    correctAnswer: number;
-    explanation: string;
-}
-
-interface Quiz {
-    questions: Question[];
 }
 
 interface GlossaryTerm {
@@ -167,13 +192,11 @@ const parseContentWithImages = (content: string, inlineImages?: InlineImage[]) =
         return <div className="whitespace-pre-line leading-relaxed">{content}</div>;
     }
 
-    // Разделяем контент по маркерам [INLINE_IMAGE_1], [INLINE_IMAGE_2] и т.д.
     const parts = content.split(/(\[INLINE_IMAGE_\d+\])/);
 
     return (
         <div className="leading-relaxed">
             {parts.map((part, index) => {
-                // Проверяем, является ли часть маркером изображения
                 const imageMatch = part.match(/\[INLINE_IMAGE_(\d+)\]/);
                 if (imageMatch) {
                     const imageIndex = parseInt(imageMatch[1]) - 1;
@@ -182,14 +205,107 @@ const parseContentWithImages = (content: string, inlineImages?: InlineImage[]) =
                     }
                     return null;
                 }
-                // Если это не маркер изображения, отображаем как текст
                 return <div key={index} className="whitespace-pre-line">{part}</div>;
             })}
         </div>
     );
 };
 
-// Данные сайта с поддержкой нескольких изображений
+// Компоненты для разных типов вопросов
+const MultipleChoiceQuestionComponent: React.FC<{
+    question: MultipleChoiceQuestion;
+    selectedAnswer: number | null;
+    onAnswerSelect: (answerIndex: number) => void;
+}> = ({ question, selectedAnswer, onAnswerSelect }) => {
+    return (
+        <div className="space-y-3">
+            {question.options.map((option, index) => (
+                <button
+                    key={index}
+                    className={`w-full text-left p-4 rounded-md border transition-all ${selectedAnswer === index
+                            ? 'border-amber-600 bg-amber-200 text-amber-900'
+                            : 'border-amber-300 hover:border-amber-400 hover:bg-amber-200 text-amber-800'
+                        }`}
+                    onClick={() => onAnswerSelect(index)}
+                >
+                    <span className="font-semibold mr-3">
+                        {String.fromCharCode(65 + index)}.
+                    </span>
+                    {option}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+const TextInputQuestionComponent: React.FC<{
+    question: TextInputQuestion;
+    userAnswer: string;
+    onAnswerChange: (answer: string) => void;
+}> = ({ question, userAnswer, onAnswerChange }) => {
+    return (
+        <div className="space-y-3">
+            <input
+                type="text"
+                value={userAnswer}
+                onChange={(e) => onAnswerChange(e.target.value)}
+                placeholder={question.placeholder || "Введите ваш ответ..."}
+                className="w-full p-4 border border-amber-300 rounded-md bg-amber-50 text-amber-900 placeholder-amber-500 focus:outline-none focus:border-amber-500"
+            />
+        </div>
+    );
+};
+
+const MatchingQuestionComponent: React.FC<{
+    question: MatchingQuestion;
+    userMatches: Record<number, number | null>;
+    onMatchChange: (leftIndex: number, rightIndex: number | null) => void;
+}> = ({ question, userMatches, onMatchChange }) => {
+    const rightItems = question.pairs.map(pair => pair.right);
+    const shuffledRightItems = [...rightItems].sort(() => Math.random() - 0.5);
+
+    return (
+        <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <h4 className="font-semibold text-amber-900 mb-3">События/Термины</h4>
+                    <div className="space-y-2">
+                        {question.pairs.map((pair, leftIndex) => (
+                            <div key={leftIndex} className="p-3 bg-amber-100 rounded border border-amber-200">
+                                {pair.left}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <h4 className="font-semibold text-amber-900 mb-3">Соответствия</h4>
+                    <div className="space-y-2">
+                        {shuffledRightItems.map((rightItem, rightIndex) => (
+                            <select
+                                key={rightIndex}
+                                value={userMatches[rightIndex] !== null ? userMatches[rightIndex]! : ''}
+                                onChange={(e) => {
+                                    const leftIndex = e.target.value ? parseInt(e.target.value) : null;
+                                    onMatchChange(rightIndex, leftIndex);
+                                }}
+                                className="w-full p-3 border border-amber-300 rounded bg-amber-50 text-amber-900"
+                            >
+                                <option value="">Выберите соответствие</option>
+                                {question.pairs.map((_, index) => (
+                                    <option key={index} value={index}>
+                                        {index + 1}
+                                    </option>
+                                ))}
+                            </select>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Данные сайта с разными типами вопросов
 const sections: Section[] = [
     {
         id: 'ancient',
@@ -200,6 +316,7 @@ const sections: Section[] = [
             questions: [
                 {
                     id: 'q1',
+                    type: 'multiple-choice',
                     question: 'Сколько тысячелетий просуществовала египетская цивилизация?',
                     options: ['Более одного тысячелетия', 'Более двух тысячелетий', 'Более трех тысячелетий', 'Более четырех тысячелетий'],
                     correctAnswer: 2,
@@ -207,20 +324,26 @@ const sections: Section[] = [
                 },
                 {
                     id: 'q2',
-                    question: 'Какой период римской истории длился с 509 по 27 год до н.э.?',
-                    options: ['Царский период', 'Римская республика', 'Римская империя', 'Поздняя империя'],
-                    correctAnswer: 1,
-                    explanation: 'Римская республика существовала с 509 по 27 год до н.э., когда была установлена империя при Августе.'
+                    type: 'text-input',
+                    question: 'В каком году был основан Рим согласно легенде?',
+                    correctAnswer: '753 до н.э.',
+                    placeholder: 'Введите год основания Рима...',
+                    explanation: 'Согласно римской легенде, Рим был основан Ромулом в 753 году до н.э.'
                 },
                 {
                     id: 'q3',
-                    question: 'Кто из древнегреческих философов был учителем Александра Македонского?',
-                    options: ['Сократ', 'Платон', 'Аристотель', 'Эпикур'],
-                    correctAnswer: 2,
-                    explanation: 'Аристотель был наставником Александра Македонского в юности, обучая его философии, политике и наукам.'
+                    type: 'matching',
+                    question: 'Установите соответствие между философами и их учениками:',
+                    pairs: [
+                        { left: 'Сократ', right: 'Платон' },
+                        { left: 'Платон', right: 'Аристотель' },
+                        { left: 'Аристотель', right: 'Александр Македонский' }
+                    ],
+                    explanation: 'Сократ был учителем Платона, Платон - Аристотеля, а Аристотель - Александра Македонского.'
                 },
                 {
                     id: 'q4',
+                    type: 'multiple-choice',
                     question: 'Какое достижение НЕ принадлежит древним грекам?',
                     options: ['Демократия', 'Олимпийские игры', 'Римское право', 'Театр'],
                     correctAnswer: 2,
@@ -228,10 +351,11 @@ const sections: Section[] = [
                 },
                 {
                     id: 'q5',
-                    question: 'В каком году был основан Рим согласно легенде?',
-                    options: ['776 г. до н.э.', '753 г. до н.э.', '509 г. до н.э.', '264 г. до н.э.'],
-                    correctAnswer: 1,
-                    explanation: 'Согласно римской легенде, Рим был основан Ромулом в 753 году до н.э.'
+                    type: 'text-input',
+                    question: 'Как называлась система письменности в Древнем Египте?',
+                    correctAnswer: 'иероглифы',
+                    placeholder: 'Введите название системы письменности...',
+                    explanation: 'Древнеегипетская система письменности называлась иероглифической.'
                 }
             ]
         },
@@ -359,7 +483,7 @@ const sections: Section[] = [
             }
         ]
     },
-    // Остальные разделы остаются аналогичными с добавлением inlineImages
+    // Остальные разделы...
 ];
 
 export default function Home() {
@@ -368,12 +492,14 @@ export default function Home() {
     const [isQuizMode, setIsQuizMode] = useState(false);
     const [isGlossaryMode, setIsGlossaryMode] = useState(false);
     const [currentQuestion, setCurrentQuestion] = useState(0);
-    const [userAnswers, setUserAnswers] = useState<number[]>([]);
+    const [userAnswers, setUserAnswers] = useState<(number | string | Record<number, number | null>)[]>([]);
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+    const [textAnswer, setTextAnswer] = useState('');
+    const [matchingAnswers, setMatchingAnswers] = useState<Record<number, number | null>>({});
     const [showResult, setShowResult] = useState(false);
     const [quizCompleted, setQuizCompleted] = useState(false);
 
-    // Функция для возврата на главную
+    // Функции навигации
     const goToHome = () => {
         setCurrentSection(null);
         setCurrentTopic(null);
@@ -382,7 +508,6 @@ export default function Home() {
         resetQuiz();
     };
 
-    // Функция для возврата к списку тем
     const goToSection = () => {
         setCurrentTopic(null);
         setIsQuizMode(false);
@@ -390,14 +515,12 @@ export default function Home() {
         resetQuiz();
     };
 
-    // Функции для работы с тестом
     const startQuiz = () => {
         setIsQuizMode(true);
         setIsGlossaryMode(false);
         resetQuiz();
     };
 
-    // Функции для работы с глоссарием
     const showGlossary = () => {
         setIsGlossaryMode(true);
         setIsQuizMode(false);
@@ -408,28 +531,77 @@ export default function Home() {
         setCurrentQuestion(0);
         setUserAnswers([]);
         setSelectedAnswer(null);
+        setTextAnswer('');
+        setMatchingAnswers({});
         setShowResult(false);
         setQuizCompleted(false);
     };
 
-    const selectAnswer = (answerIndex: number) => {
+    const handleAnswerSelect = (answerIndex: number) => {
         setSelectedAnswer(answerIndex);
     };
 
-    const nextQuestion = () => {
-        if (selectedAnswer !== null) {
-            const newAnswers = [...userAnswers, selectedAnswer];
-            setUserAnswers(newAnswers);
+    const handleTextAnswerChange = (answer: string) => {
+        setTextAnswer(answer);
+    };
 
-            if (currentSection && currentQuestion < currentSection.quiz.questions.length - 1) {
-                setCurrentQuestion(currentQuestion + 1);
-                setSelectedAnswer(null);
-            } else {
-                setQuizCompleted(true);
-                setShowResult(true);
-            }
+    const handleMatchChange = (rightIndex: number, leftIndex: number | null) => {
+        setMatchingAnswers(prev => ({
+            ...prev,
+            [rightIndex]: leftIndex
+        }));
+    };
+
+    const nextQuestion = () => {
+        if (!currentSection) return;
+
+        const currentQ = currentSection.quiz.questions[currentQuestion];
+        let userAnswer: number | string | Record<number, number | null>;
+
+        switch (currentQ.type) {
+            case 'multiple-choice':
+                if (selectedAnswer === null) return;
+                userAnswer = selectedAnswer;
+                break;
+            case 'text-input':
+                if (!textAnswer.trim()) return;
+                userAnswer = textAnswer.toLowerCase().trim();
+                break;
+            case 'matching':
+                userAnswer = { ...matchingAnswers };
+                break;
+        }
+
+        const newAnswers = [...userAnswers, userAnswer];
+        setUserAnswers(newAnswers);
+
+        if (currentQuestion < currentSection.quiz.questions.length - 1) {
+            setCurrentQuestion(currentQuestion + 1);
+            setSelectedAnswer(null);
+            setTextAnswer('');
+            setMatchingAnswers({});
+        } else {
+            setQuizCompleted(true);
+            setShowResult(true);
         }
     };
+
+    const isAnswerProvided = () => {
+        if (!currentSection) return false;
+        const currentQ = currentSection.quiz.questions[currentQuestion];
+
+        switch (currentQ.type) {
+            case 'multiple-choice':
+                return selectedAnswer !== null;
+            case 'text-input':
+                return textAnswer.trim() !== '';
+            case 'matching':
+                return Object.values(matchingAnswers).every(val => val !== null);
+            default:
+                return false;
+        }
+    };
+
 
     const restartQuiz = () => {
         resetQuiz();
@@ -447,14 +619,236 @@ export default function Home() {
     const calculateScore = () => {
         if (!currentSection) return 0;
         let correct = 0;
+
         userAnswers.forEach((answer, index) => {
-            if (answer === currentSection.quiz.questions[index].correctAnswer) {
-                correct++;
+            const question = currentSection.quiz.questions[index];
+
+            switch (question.type) {
+                case 'multiple-choice':
+                    if (answer === question.correctAnswer) correct++;
+                    break;
+                case 'text-input':
+                    if ((answer as string) === question.correctAnswer.toLowerCase()) correct++;
+                    break;
+                case 'matching':
+                    const userMatches = answer as Record<number, number | null>;
+                    const isCorrect = question.pairs.every((_, index) => {
+                        return userMatches[index] === index;
+                    });
+                    if (isCorrect) correct++;
+                    break;
             }
         });
+
         return correct;
     };
 
+
+
+    // Отображение теста
+    if (currentSection && isQuizMode) {
+        const SectionIcon = currentSection.icon;
+        const questions = currentSection.quiz.questions;
+
+        if (showResult) {
+            const score = calculateScore();
+            const percentage = Math.round((score / questions.length) * 100);
+
+            return (
+                <div className="min-h-screen bg-amber-50">
+                    <div className="container mx-auto px-4 py-8 max-w-4xl">
+                        <div className="mb-6">
+                            <button
+                                onClick={() => setIsQuizMode(false)}
+                                className="mb-4 flex items-center text-amber-800 hover:text-amber-900"
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Назад к разделу
+                            </button>
+                        </div>
+
+                        <div className="border border-amber-200 rounded-lg p-6 bg-amber-100 text-center">
+                            <div className="flex items-center justify-center gap-3 mb-4">
+                                <div className="p-3 bg-amber-200 rounded-lg">
+                                    <SectionIcon className="w-8 h-8 text-amber-800" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-amber-900">Тест завершен!</h2>
+                                    <p className="text-amber-700">Раздел: {currentSection.title}</p>
+                                </div>
+                            </div>
+
+                            <div className="text-6xl mb-4">
+                                {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
+                            </div>
+
+                            <div className="space-y-2">
+                                <p className="text-amber-800">Ваш результат:</p>
+                                <div className="flex items-center justify-center gap-2">
+                                    <span className="text-3xl font-semibold text-amber-900">{score}</span>
+                                    <span className="text-amber-700">из {questions.length}</span>
+                                    <span className={`px-2 py-1 rounded-full text-sm ${percentage >= 80 ? 'bg-green-200 text-green-800' :
+                                            percentage >= 60 ? 'bg-yellow-200 text-yellow-800' :
+                                                'bg-red-200 text-red-800'
+                                        }`}>
+                                        {percentage}%
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p className="text-amber-700 mt-4">
+                                {percentage >= 80
+                                    ? 'Отличный результат! Вы хорошо знаете этот исторический период.'
+                                    : percentage >= 60
+                                        ? 'Хороший результат! Рекомендуем повторить материал.'
+                                        : 'Стоит изучить материал более внимательно и попробовать еще раз.'
+                                }
+                            </p>
+
+                            <div className="space-y-3 mt-6">
+                                {questions.map((question, index) => {
+                                    const userAnswer = userAnswers[index];
+                                    let isCorrect = false;
+                                    let correctAnswer = '';
+
+                                    switch (question.type) {
+                                        case 'multiple-choice':
+                                            isCorrect = userAnswer === question.correctAnswer;
+                                            correctAnswer = question.options[question.correctAnswer];
+                                            break;
+                                        case 'text-input':
+                                            isCorrect = (userAnswer as string) === question.correctAnswer.toLowerCase();
+                                            correctAnswer = question.correctAnswer;
+                                            break;
+                                        case 'matching':
+                                            isCorrect = question.pairs.every((_, idx) => {
+                                                return (userAnswer as Record<number, number | null>)[idx] === idx;
+                                            });
+                                            correctAnswer = 'Все соответствия установлены правильно';
+                                            break;
+                                    }
+
+                                    return (
+                                        <div key={question.id} className="text-left p-4 border border-amber-200 rounded-lg bg-amber-50">
+                                            <div className="flex items-start gap-3 mb-2">
+                                                {isCorrect ? (
+                                                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                                                ) : (
+                                                    <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                                )}
+                                                <div className="flex-1">
+                                                    <p className="mb-2 font-medium text-amber-900">{question.question}</p>
+                                                    {!isCorrect && (
+                                                        <p className="text-sm text-green-700 mt-1">
+                                                            Правильный ответ: {correctAnswer}
+                                                        </p>
+                                                    )}
+                                                    <p className="text-sm text-amber-600 mt-2">
+                                                        {question.explanation}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex gap-3 justify-center pt-6">
+                                <button
+                                    onClick={resetQuiz}
+                                    className="px-4 py-2 border border-amber-300 text-amber-800 rounded-md hover:bg-amber-200 flex items-center transition-colors"
+                                >
+                                    <RotateCcw className="w-4 h-4 mr-2" />
+                                    Пройти еще раз
+                                </button>
+                                <button
+                                    onClick={() => setIsQuizMode(false)}
+                                    className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors"
+                                >
+                                    Вернуться к разделу
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const currentQ = questions[currentQuestion];
+        const progress = ((currentQuestion + 1) / questions.length) * 100;
+
+        return (
+            <div className="min-h-screen bg-amber-50">
+                <div className="container mx-auto px-4 py-8 max-w-4xl">
+                    <div className="mb-6">
+                        <button
+                            onClick={() => setIsQuizMode(false)}
+                            className="mb-4 flex items-center text-amber-800 hover:text-amber-900"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Выйти из теста
+                        </button>
+
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-xl font-semibold text-amber-900">Тест: {currentSection.title}</h2>
+                                <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-md text-sm">
+                                    {currentQuestion + 1} из {questions.length}
+                                </span>
+                            </div>
+                            <div className="w-full bg-amber-200 rounded-full h-2">
+                                <div
+                                    className="bg-amber-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border border-amber-200 rounded-lg p-6 bg-amber-100">
+                        <h3 className="text-xl font-semibold mb-6 text-amber-900">{currentQ.question}</h3>
+
+                        {currentQ.type === 'multiple-choice' && (
+                            <MultipleChoiceQuestionComponent
+                                question={currentQ}
+                                selectedAnswer={selectedAnswer}
+                                onAnswerSelect={handleAnswerSelect}
+                            />
+                        )}
+
+                        {currentQ.type === 'text-input' && (
+                            <TextInputQuestionComponent
+                                question={currentQ}
+                                userAnswer={textAnswer}
+                                onAnswerChange={handleTextAnswerChange}
+                            />
+                        )}
+
+                        {currentQ.type === 'matching' && (
+                            <MatchingQuestionComponent
+                                question={currentQ}
+                                userMatches={matchingAnswers}
+                                onMatchChange={handleMatchChange}
+                            />
+                        )}
+
+                        <div className="flex justify-end pt-6">
+                            <button
+                                onClick={nextQuestion}
+                                disabled={!isAnswerProvided()}
+                                className={`px-6 py-2 rounded-md transition-colors ${!isAnswerProvided()
+                                        ? 'bg-amber-300 text-amber-500 cursor-not-allowed'
+                                        : 'bg-amber-600 text-white hover:bg-amber-700'
+                                    }`}
+                            >
+                                {currentQuestion === questions.length - 1 ? 'Завершить тест' : 'Следующий вопрос'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     // Отображение содержания темы
     if (currentTopic && currentSection) {
         return (
@@ -505,192 +899,6 @@ export default function Home() {
                             </div>
                         </div>
                     </article>
-                </div>
-            </div>
-        );
-    }
-
-
-    // Отображение теста
-    if (currentSection && isQuizMode) {
-        const SectionIcon = currentSection.icon;
-        const questions = currentSection.quiz.questions;
-
-        if (showResult) {
-            const score = calculateScore();
-            const percentage = Math.round((score / questions.length) * 100);
-
-            return (
-                <div className="min-h-screen bg-amber-50">
-                    <div className="container mx-auto px-4 py-8 max-w-4xl">
-                        <div className="mb-6">
-                            <button
-                                onClick={exitQuiz}
-                                className="mb-4 flex items-center text-amber-800 hover:text-amber-900"
-                            >
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Назад к разделу
-                            </button>
-                        </div>
-
-                        <div className="border border-amber-200 rounded-lg p-6 bg-amber-100 text-center">
-                            <div className="flex items-center justify-center gap-3 mb-4">
-                                <div className="p-3 bg-amber-200 rounded-lg">
-                                    <SectionIcon className="w-8 h-8 text-amber-800" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-amber-900">Тест завершен!</h2>
-                                    <p className="text-amber-700">Раздел: {currentSection.title}</p>
-                                </div>
-                            </div>
-
-                            <div className="text-6xl mb-4">
-                                {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
-                            </div>
-
-                            <div className="space-y-2">
-                                <p className="text-amber-800">Ваш результат:</p>
-                                <div className="flex items-center justify-center gap-2">
-                                    <span className="text-3xl font-semibold text-amber-900">{score}</span>
-                                    <span className="text-amber-700">из {questions.length}</span>
-                                    <span className={`px-2 py-1 rounded-full text-sm ${percentage >= 80
-                                        ? 'bg-green-200 text-green-800'
-                                        : percentage >= 60
-                                            ? 'bg-yellow-200 text-yellow-800'
-                                            : 'bg-red-200 text-red-800'
-                                        }`}>
-                                        {percentage}%
-                                    </span>
-                                </div>
-                            </div>
-
-                            <p className="text-amber-700 mt-4">
-                                {percentage >= 80
-                                    ? 'Отличный результат! Вы хорошо знаете этот исторический период.'
-                                    : percentage >= 60
-                                        ? 'Хороший результат! Рекомендуем повторить материал.'
-                                        : 'Стоит изучить материал более внимательно и попробовать еще раз.'
-                                }
-                            </p>
-
-                            <div className="space-y-3 mt-6">
-                                {questions.map((question, index) => {
-                                    const userAnswer = userAnswers[index];
-                                    const isCorrect = userAnswer === question.correctAnswer;
-
-                                    return (
-                                        <div key={question.id} className="text-left p-4 border border-amber-200 rounded-lg bg-amber-50">
-                                            <div className="flex items-start gap-3 mb-2">
-                                                {isCorrect ? (
-                                                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                                                ) : (
-                                                    <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                                                )}
-                                                <div className="flex-1">
-                                                    <p className="mb-2 font-medium text-amber-900">{question.question}</p>
-                                                    <p className="text-sm text-amber-700">
-                                                        Ваш ответ: {question.options[userAnswer]}
-                                                    </p>
-                                                    {!isCorrect && (
-                                                        <p className="text-sm text-green-700 mt-1">
-                                                            Правильный ответ: {question.options[question.correctAnswer]}
-                                                        </p>
-                                                    )}
-                                                    <p className="text-sm text-amber-600 mt-2">
-                                                        {question.explanation}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="flex gap-3 justify-center pt-6">
-                                <button
-                                    onClick={restartQuiz}
-                                    className="px-4 py-2 border border-amber-300 text-amber-800 rounded-md hover:bg-amber-200 flex items-center transition-colors"
-                                >
-                                    <RotateCcw className="w-4 h-4 mr-2" />
-                                    Пройти еще раз
-                                </button>
-                                <button
-                                    onClick={exitQuiz}
-                                    className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors"
-                                >
-                                    Вернуться к разделу
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        const currentQ = questions[currentQuestion];
-        const progress = ((currentQuestion + 1) / questions.length) * 100;
-
-        return (
-            <div className="min-h-screen bg-amber-50">
-                <div className="container mx-auto px-4 py-8 max-w-4xl">
-                    <div className="mb-6">
-                        <button
-                            onClick={exitQuiz}
-                            className="mb-4 flex items-center text-amber-800 hover:text-amber-900"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Выйти из теста
-                        </button>
-
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-xl font-semibold text-amber-900">Тест: {currentSection.title}</h2>
-                                <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-md text-sm">
-                                    {currentQuestion + 1} из {questions.length}
-                                </span>
-                            </div>
-                            <div className="w-full bg-amber-200 rounded-full h-2">
-                                <div
-                                    className="bg-amber-600 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${progress}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="border border-amber-200 rounded-lg p-6 bg-amber-100">
-                        <h3 className="text-xl font-semibold mb-6 text-amber-900">{currentQ.question}</h3>
-                        <div className="space-y-3">
-                            {currentQ.options.map((option, index) => (
-                                <button
-                                    key={index}
-                                    className={`w-full text-left p-4 rounded-md border transition-all ${selectedAnswer === index
-                                        ? 'border-amber-600 bg-amber-200 text-amber-900'
-                                        : 'border-amber-300 hover:border-amber-400 hover:bg-amber-200 text-amber-800'
-                                        }`}
-                                    onClick={() => selectAnswer(index)}
-                                >
-                                    <span className="font-semibold mr-3">
-                                        {String.fromCharCode(65 + index)}.
-                                    </span>
-                                    {option}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="flex justify-end pt-6">
-                            <button
-                                onClick={nextQuestion}
-                                disabled={selectedAnswer === null}
-                                className={`px-6 py-2 rounded-md transition-colors ${selectedAnswer === null
-                                    ? 'bg-amber-300 text-amber-500 cursor-not-allowed'
-                                    : 'bg-amber-600 text-white hover:bg-amber-700'
-                                    }`}
-                            >
-                                {currentQuestion === questions.length - 1 ? 'Завершить тест' : 'Следующий вопрос'}
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         );
@@ -873,4 +1081,9 @@ export default function Home() {
             </div>
         </div>
     );
+
+    // Остальные компоненты (главная страница, темы, глоссарий) остаются без изменений
+    // ... (код из предыдущих версий)
 }
+
+// Добавьте остальные компоненты (отображение тем, глоссария, главной страницы) из предыдущего кода
