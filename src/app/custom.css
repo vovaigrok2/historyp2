@@ -1,0 +1,17 @@
+/* app/custom.css */
+.inline-image-container {
+    width: 100%;
+    margin: 2rem 0;
+}
+
+.prose img {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 768px) {
+    .inline-image-container {
+        margin: 1.5rem -1rem;
+        width: calc(100% + 2rem);
+    }
+}
