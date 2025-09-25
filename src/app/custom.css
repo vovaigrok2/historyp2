@@ -9,9 +9,36 @@
     height: auto;
 }
 
-@media (max-width: 768px) {
+/*@media (max-width: 768px) {
     .inline-image-container {
         margin: 1.5rem -1rem;
         width: calc(100% + 2rem);
     }
+}*/
+
+
+@media (max-width: 768px) {
+    .float-left,
+    .float-right {
+        float: none;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 100% !important;
+    }
+}
+
+.float-left {
+    float: left;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+}
+
+.float-right {
+    float: right;
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.clear-both {
+    clear: both;
 }

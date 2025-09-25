@@ -247,7 +247,8 @@ const MarkdownImageComponent: React.FC<{
     alt?: string;
     caption?: string;
     className?: string;
-}> = ({ src, alt = "", caption = "", className = "" }) => {
+    align?: 'left' | 'right' | 'center';
+}> = ({ src, alt = "", caption = "", className = "", align = 'center' }) => {
     const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
     const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
@@ -257,41 +258,96 @@ const MarkdownImageComponent: React.FC<{
         setAspectRatio(width / height);
     };
 
+    // Классы для разных типов выравнивания с медиа-запросами
+    const alignmentClasses = {
+        left: "float-left mr-4 mb-4 ml-0 max-w-[50%] md:max-w-[300px] w-full md:w-auto",
+        right: "float-right ml-4 mb-4 mr-0 max-w-[50%] md:max-w-[300px] w-full md:w-auto",
+        center: "mx-auto my-6 w-full"
+    };
+
+    // Для центрированных изображений
+    if (align === 'center') {
+        return (
+            <div className={`${alignmentClasses[align]} ${className}`}>
+                <div
+                    className="relative w-full"
+                    style={{ paddingBottom: `${100 / aspectRatio}%` }}
+                >
+                    <Image
+                        src={src}
+                        alt={alt}
+                        fill
+                        className="object-cover rounded-lg border-2 border-amber-300"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                        onLoad={handleImageLoad}
+                    />
+                </div>
+                {caption && (
+                    <div className="text-center text-sm text-amber-700 mt-2 italic">
+                        {caption}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Для левого/правого выравнивания - на мобильных делаем центрированными
     return (
-        <div className={`my-6 w-full ${className}`}>
-            <div
-                className="relative w-full"
-                style={{ paddingBottom: `${100 / aspectRatio}%` }}
-            >
+        <>
+            {/* Мобильная версия - центрированная */}
+            <div className={`md:hidden mx-auto my-4 w-full max-w-md ${className}`}>
+                <div
+                    className="relative w-full"
+                    style={{ paddingBottom: `${100 / aspectRatio}%` }}
+                >
+                    <Image
+                        src={src}
+                        alt={alt}
+                        fill
+                        className="object-cover rounded-lg border-2 border-amber-300"
+                        sizes="(max-width: 768px) 100vw, 400px"
+                        onLoad={handleImageLoad}
+                    />
+                </div>
+                {caption && (
+                    <div className="text-center text-sm text-amber-700 mt-2 italic">
+                        {caption}
+                    </div>
+                )}
+            </div>
+
+            {/* Десктопная версия - с обтеканием */}
+            <div className={`hidden md:block ${alignmentClasses[align]} ${className}`}>
                 <Image
                     src={src}
                     alt={alt}
-                    fill
-                    className="object-cover rounded-lg border-2 border-amber-300"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                    width={300}
+                    height={200}
+                    className="rounded-lg border-2 border-amber-300 object-cover w-full"
+                    sizes="(max-width: 768px) 100vw, 300px"
                     onLoad={handleImageLoad}
                 />
+                {caption && (
+                    <div className="text-center text-sm text-amber-700 mt-2 italic">
+                        {caption}
+                    </div>
+                )}
             </div>
-            {caption && (
-                <div className="text-center text-sm text-amber-700 mt-2 italic">
-                    {caption}
-                </div>
-            )}
-        </div>
+        </>
     );
 };
 
 const FormattedText: React.FC<{ content: string }> = ({ content }) => {
     const parseContent = (text: string) => {
-        // Регулярное выражение для поиска изображений в формате ![alt](src "caption")
-        const imageRegex = /!\[(.*?)\]\((.*?)(?:\s+"(.*?)")?\)/g;
+        // Обновляем регулярное выражение для поддержки выравнивания: ![alt](src,align "caption")
+        const imageRegex = /!\[(.*?)\]\((.*?)(?:,\s*([LR]))?(?:\s+"(.*?)")?\)/g;
 
         const parts = text.split(imageRegex);
         const result: React.ReactNode[] = [];
 
         for (let i = 0; i < parts.length; i++) {
-            // Каждые 4 элемента образуют полное совпадение: [полный_матч, alt, src, caption]
-            if (i % 4 === 0 && parts[i] !== undefined) {
+            // Теперь каждые 5 элементов: [полный_матч, alt, src, align, caption]
+            if (i % 5 === 0 && parts[i] !== undefined) {
                 // Текст перед изображением
                 if (parts[i].trim()) {
                     result.push(parseTextWithFormatting(parts[i]));
@@ -301,7 +357,11 @@ const FormattedText: React.FC<{ content: string }> = ({ content }) => {
                 if (parts[i + 1] !== undefined && parts[i + 2] !== undefined) {
                     const alt = parts[i + 1];
                     const src = parts[i + 2];
-                    const caption = parts[i + 3] || "";
+                    const align = parts[i + 3] as 'L' | 'R' | undefined;
+                    const caption = parts[i + 4] || "";
+
+                    // Преобразуем L/R в left/right
+                    const alignment = align === 'L' ? 'left' : align === 'R' ? 'right' : 'center';
 
                     result.push(
                         <MarkdownImageComponent
@@ -309,10 +369,11 @@ const FormattedText: React.FC<{ content: string }> = ({ content }) => {
                             src={src}
                             alt={alt}
                             caption={caption}
+                            align={alignment}
                         />
                     );
 
-                    i += 3; // Пропускаем обработанные части
+                    i += 4; // Пропускаем обработанные части
                 }
             }
         }
@@ -349,7 +410,13 @@ const FormattedText: React.FC<{ content: string }> = ({ content }) => {
         );
     };
 
-    return <div className="leading-relaxed">{parseContent(content)}</div>;
+    // Добавляем очистку floats после контента
+    return (
+        <div className="leading-relaxed">
+            {parseContent(content)}
+            <div className="clear-both"></div>
+        </div>
+    );
 };
 
 // Функция для парсинга контента с форматированием и изображениями
