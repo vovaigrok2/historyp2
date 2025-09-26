@@ -661,25 +661,25 @@ const sections: Section[] = [
             {
                 id: 'kubanKamen',
                 title: 'Кубань в каменном веке',
-                image: '/images/kubanKamenPreview.png',
+                image: '/1/1/7.png',
                 contentFile: '/1/1/text.txt'
             },
             {
                 id: 'bronzeCulture',
                 title: 'Культуры эпохи бронзы',
-                image: '/images/1 Раздел/1.2/Ravshans.png',
+                image: '/1/2/8.png',
                 contentFile: '/1/2/text.txt'
             },
             {
                 id: '1.3',
                 title: 'Население Северо-Западного Кавказа в железном веке',
-                image: '/images/ancient-greece.jpeg',
+                image: '/1/4/szkpreview.jpg',
                 contentFile: '/1/3/text.txt'
             },
             {
                 id: '1.4',
                 title: 'Греческая колонизация Северо-Западного Кавказа',
-                image: '/images/ancient-greece.jpeg',
+                image: '/1/4/4.png',
                 contentFile: '/1/4/text.txt'
             },
         ]
@@ -830,20 +830,20 @@ const sections: Section[] = [
             {
                 id: 'topic1',
                 title: 'Территория расселения и общественно-политическое устройство адыгов в ХVIII - середине ХIХ вв.',
-                image: '/images/kubanKamenPreview.jpeg',
+                image: '/3/1/5.png',
                 contentFile: '/3/1/text.txt'
             },
             {
                 id: 'topic2',
                 title: 'Военно-политическая ситуация на Северо-Западном Кавказе в ХVIII веке',
-                image: '/images/1 Раздел/1.2/Ravshans.png',
+                image: '/3/2/szk18.jpg',
                 contentFile: '/3/2/text.txt'
             }
             ,
             {
                 id: 'topic3',
                 title: 'Переселение черноморских и донских казаков на Кубань',
-                image: '/images/1 Раздел/1.2/Ravshans.png',
+                image: '/3/2/migration.jpg',
                 contentFile: '/3/3/text.txt'
             }
             ,
