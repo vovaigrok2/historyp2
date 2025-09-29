@@ -3,6 +3,185 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+
+// Функция для создания PDF с результатами теста
+const generateTestPDF = async (sectionTitle: string, score: number, totalQuestions: number, percentage: number, questions: any[], userAnswers: any[]) => {
+    try {
+        // Создаем временный элемент для рендеринга
+        const element = document.createElement('div');
+        element.style.width = '210mm'; // A4 width
+        element.style.padding = '20px';
+        element.style.backgroundColor = '#fefce8';
+        element.style.fontFamily = 'Arial, sans-serif';
+
+        // Форматируем дату
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ru-RU');
+        const timeStr = now.toLocaleTimeString('ru-RU');
+
+        // Создаем HTML для PDF
+        element.innerHTML = `
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #d97706; padding-bottom: 20px;">
+        <h1 style="color: #92400e; margin: 0 0 10px 0;">Результаты теста</h1>
+        <h2 style="color: #b45309; margin: 0 0 15px 0;">${sectionTitle}</h2>
+        <div style="display: flex; justify-content: center; gap: 30px; font-size: 16px;">
+          <div>Дата: ${dateStr}</div>
+          <div>Время: ${timeStr}</div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 40px; background: #fef3c7; padding: 20px; border-radius: 10px;">
+        <div style="font-size: 48px; margin-bottom: 10px;">
+          ${percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
+        </div>
+        <div style="font-size: 24px; color: #92400e; margin-bottom: 10px;">
+          Результат: ${score} из ${totalQuestions}
+        </div>
+        <div style="font-size: 20px; color: ${percentage >= 80 ? '#059669' :
+                percentage >= 60 ? '#d97706' : '#dc2626'
+            };">
+          ${percentage}% - ${percentage >= 80 ? 'Отлично' :
+                percentage >= 60 ? 'Хорошо' : 'Нужно повторить материал'
+            }
+        </div>
+      </div>
+
+      <div style="margin-bottom: 40px;">
+        <h3 style="color: #92400e; border-bottom: 1px solid #d97706; padding-bottom: 10px;">
+          Детализация ответов:
+        </h3>
+        ${questions.map((question, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = checkAnswer(question, userAnswer);
+
+                const formatAnswer = (q: any, answer: any) => {
+                    switch (q.type) {
+                        case 'single':
+                            return q.options[answer as number] || 'Нет ответа';
+                        case 'multiple':
+                            return (answer as number[] || []).map((idx: number) => q.options[idx]).join(', ') || 'Нет ответа';
+                        case 'text':
+                            return answer as string || 'Нет ответа';
+                        case 'matching':
+                            return (answer as any[] || []).map((match: any) => `${match.leftId}→${match.rightId}`).join(', ') || 'Нет ответа';
+                        default:
+                            return 'Нет ответа';
+                    }
+                };
+
+                const formatCorrect = (q: any) => {
+                    switch (q.type) {
+                        case 'single':
+                            return q.options[q.correctAnswer];
+                        case 'multiple':
+                            return q.correctAnswers.map((idx: number) => q.options[idx]).join(', ');
+                        case 'text':
+                            return q.correctAnswer;
+                        case 'matching':
+                            return q.correctMatches.map((match: any) => `${match.leftId}→${match.rightId}`).join(', ');
+                        default:
+                            return '';
+                    }
+                };
+
+                return `
+            <div style="margin-bottom: 25px; padding: 15px; background: ${isCorrect ? '#f0fdf4' : '#fef2f2'}; border-radius: 8px; border-left: 4px solid ${isCorrect ? '#10b981' : '#ef4444'};">
+              <div style="display: flex; align-items: start; margin-bottom: 10px;">
+                <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}; font-weight: bold; margin-right: 10px;">
+                  ${isCorrect ? '✓' : '✗'} ${index + 1}.
+                </span>
+                <div style="flex: 1;">
+                  <div style="font-weight: bold; margin-bottom: 8px; color: #1f2937;">
+                    ${question.question}
+                  </div>
+                  <div style="font-size: 14px; color: #6b7280; margin-bottom: 5px;">
+                    <strong>Ваш ответ:</strong> ${formatAnswer(question, userAnswer)}
+                  </div>
+                  ${!isCorrect ? `
+                    <div style="font-size: 14px; color: #059669;">
+                      <strong>Правильный ответ:</strong> ${formatCorrect(question)}
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+              <div style="font-size: 13px; color: #6b7280; background: white; padding: 10px; border-radius: 5px; border-left: 3px solid #d97706;">
+                <strong>Объяснение:</strong> ${question.explanation}
+              </div>
+            </div>
+          `;
+            }).join('')}
+      </div>
+
+
+    `;
+
+        // Добавляем элемент в DOM
+        document.body.appendChild(element);
+
+        // Создаем canvas из элемента
+        const canvas = await html2canvas(element, {
+            scale: 2, // Увеличиваем качество
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#fefce8'
+        });
+
+        // Удаляем временный элемент
+        document.body.removeChild(element);
+
+        // Создаем PDF
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 295; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Добавляем первую страницу
+        pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        // Добавляем дополнительные страницы если нужно
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+
+        // Сохраняем PDF
+        pdf.save(`Результаты теста - ${sectionTitle} - ${dateStr}.pdf`);
+
+    } catch (error) {
+        console.error('Ошибка при создании PDF:', error);
+        alert('Произошла ошибка при создании PDF файла');
+    }
+};
+// Функция для проверки ответов (должна быть доступна в области видимости)
+const checkAnswer = (question: Question, userAnswer: any): boolean => {
+    switch (question.type) {
+        case 'single':
+            return userAnswer === (question as SingleChoiceQuestion).correctAnswer;
+        case 'multiple':
+            return JSON.stringify([...(userAnswer || [])].sort()) ===
+                JSON.stringify([...(question as MultipleChoiceQuestion).correctAnswers].sort());
+        case 'text':
+            const textQuestion = question as TextAnswerQuestion;
+            if (textQuestion.caseSensitive) {
+                return (userAnswer || '').trim() === textQuestion.correctAnswer;
+            }
+            return (userAnswer || '').trim().toLowerCase() === textQuestion.correctAnswer.toLowerCase();
+        case 'matching':
+            return JSON.stringify([...(userAnswer || [])].sort((a: any, b: any) => a.leftId - b.leftId)) ===
+                JSON.stringify([...(question as MatchingQuestion).correctMatches].sort((a: any, b: any) => a.leftId - b.leftId));
+        default:
+            return false;
+    }
+};
+
 // Custom SVG icon components
 const ArrowLeft = ({ className }: { className?: string }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1972,7 +2151,6 @@ export default function Home() {
                                     );
                                 })}
                             </div>
-
                             <div className="flex gap-3 justify-center pt-6">
                                 <button
                                     onClick={restartQuiz}
@@ -1980,6 +2158,22 @@ export default function Home() {
                                 >
                                     <RotateCcw className="w-4 h-4 mr-2" />
                                     Пройти еще раз
+                                </button>
+                                <button
+                                    onClick={() => generateTestPDF(
+                                        currentSection.title,
+                                        score,
+                                        questions.length,
+                                        percentage,
+                                        questions,
+                                        userAnswers
+                                    )}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center transition-colors"
+                                >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Сохранить в PDF
                                 </button>
                                 <button
                                     onClick={exitQuiz}
