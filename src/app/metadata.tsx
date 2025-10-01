@@ -4,7 +4,7 @@ export const metadata: Metadata = {
     title: "Исторический портал Кубани",
     description: "Изучение истории Кубани",
     themeColor: "#92400e",
-    manifest: "/Manifest.json",
+    manifest: "Manifest.json",
     icons: {
         icon: "/icons/icon-192x192.png",
         apple: "/icons/icon-192x192.png"
