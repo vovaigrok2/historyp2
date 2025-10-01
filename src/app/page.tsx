@@ -40,11 +40,11 @@ const generateTestPDF = async (sectionTitle: string, score: number, totalQuestio
           Результат: ${score} из ${totalQuestions}
         </div>
         <div style="font-size: 20px; color: ${percentage >= 80 ? '#059669' :
-                percentage >= 60 ? '#d97706' : '#dc2626'
-            };">
+            percentage >= 60 ? '#d97706' : '#dc2626'
+        };">
           ${percentage}% - ${percentage >= 80 ? 'Отлично' :
-                percentage >= 60 ? 'Хорошо' : 'Нужно повторить материал'
-            }
+            percentage >= 60 ? 'Хорошо' : 'Нужно повторить материал'
+        }
         </div>
       </div>
 
@@ -53,40 +53,40 @@ const generateTestPDF = async (sectionTitle: string, score: number, totalQuestio
           Детализация ответов:
         </h3>
         ${questions.map((question, index) => {
-                const userAnswer = userAnswers[index];
-                const isCorrect = checkAnswer(question, userAnswer);
+            const userAnswer = userAnswers[index];
+            const isCorrect = checkAnswer(question, userAnswer);
 
-                const formatAnswer = (q: any, answer: any) => {
-                    switch (q.type) {
-                        case 'single':
-                            return q.options[answer as number] || 'Нет ответа';
-                        case 'multiple':
-                            return (answer as number[] || []).map((idx: number) => q.options[idx]).join(', ') || 'Нет ответа';
-                        case 'text':
-                            return answer as string || 'Нет ответа';
-                        case 'matching':
-                            return (answer as any[] || []).map((match: any) => `${match.leftId}→${match.rightId}`).join(', ') || 'Нет ответа';
-                        default:
-                            return 'Нет ответа';
-                    }
-                };
+            const formatAnswer = (q: any, answer: any) => {
+                switch (q.type) {
+                    case 'single':
+                        return q.options[answer as number] || 'Нет ответа';
+                    case 'multiple':
+                        return (answer as number[] || []).map((idx: number) => q.options[idx]).join(', ') || 'Нет ответа';
+                    case 'text':
+                        return answer as string || 'Нет ответа';
+                    case 'matching':
+                        return (answer as any[] || []).map((match: any) => `${match.leftId}→${match.rightId}`).join(', ') || 'Нет ответа';
+                    default:
+                        return 'Нет ответа';
+                }
+            };
 
-                const formatCorrect = (q: any) => {
-                    switch (q.type) {
-                        case 'single':
-                            return q.options[q.correctAnswer];
-                        case 'multiple':
-                            return q.correctAnswers.map((idx: number) => q.options[idx]).join(', ');
-                        case 'text':
-                            return q.correctAnswer;
-                        case 'matching':
-                            return q.correctMatches.map((match: any) => `${match.leftId}→${match.rightId}`).join(', ');
-                        default:
-                            return '';
-                    }
-                };
+            const formatCorrect = (q: any) => {
+                switch (q.type) {
+                    case 'single':
+                        return q.options[q.correctAnswer];
+                    case 'multiple':
+                        return q.correctAnswers.map((idx: number) => q.options[idx]).join(', ');
+                    case 'text':
+                        return q.correctAnswer;
+                    case 'matching':
+                        return q.correctMatches.map((match: any) => `${match.leftId}→${match.rightId}`).join(', ');
+                    default:
+                        return '';
+                }
+            };
 
-                return `
+            return `
             <div style="margin-bottom: 25px; padding: 15px; background: ${isCorrect ? '#f0fdf4' : '#fef2f2'}; border-radius: 8px; border-left: 4px solid ${isCorrect ? '#10b981' : '#ef4444'};">
               <div style="display: flex; align-items: start; margin-bottom: 10px;">
                 <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}; font-weight: bold; margin-right: 10px;">
@@ -111,7 +111,7 @@ const generateTestPDF = async (sectionTitle: string, score: number, totalQuestio
               </div>
             </div>
           `;
-            }).join('')}
+        }).join('')}
       </div>
 
 
@@ -196,45 +196,6 @@ const Book = ({ className }: { className?: string }) => (
     </svg>
 );
 
-const Globe = ({ className }: { className?: string }) => (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="m6 12 4-4 4 4" />
-        <path d="m6 12 4 4 4-4" />
-    </svg>
-);
-
-const Crown = ({ className }: { className?: string }) => (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-    </svg>
-);
-
-const Building = ({ className }: { className?: string }) => (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect width="16" height="20" x="4" y="2" rx="2" ry="2" />
-        <path d="M9 22v-4h6v4" />
-        <path d="M8 6h.01" />
-        <path d="M16 6h.01" />
-        <path d="M12 6h.01" />
-        <path d="M12 10h.01" />
-        <path d="M12 14h.01" />
-        <path d="M16 10h.01" />
-        <path d="M16 14h.01" />
-        <path d="M8 10h.01" />
-        <path d="M8 14h.01" />
-    </svg>
-);
-
-const Rocket = ({ className }: { className?: string }) => (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2" />
-        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-    </svg>
-);
-
 const Brain = ({ className }: { className?: string }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
@@ -278,6 +239,7 @@ const BookOpen = ({ className }: { className?: string }) => (
         <path d="M18 8v13" />
     </svg>
 );
+
 
 interface InlineImage {
     url: string;
@@ -485,10 +447,10 @@ interface Section {
     id: string;
     title: string;
     description: string;
-    icon: React.ComponentType<any>;
+    icon: string; // ✅ ИЗМЕНЕНО: Тип изменен на string для хранения пути к файлу
     topics: Topic[];
-    quizFile: string;      // Путь к JSON-файлу с квизом
-    glossaryFile: string; // Путь к JSON-файлу с глоссарием
+    quizFile: string;
+    glossaryFile: string;
 }
 
 
@@ -938,13 +900,12 @@ const MatchingQuestionComponent: React.FC<{
     );
 };
 
-// Данные сайта с разными типами вопросов
 const sections: Section[] = [
     {
         id: 'ancient',
         title: 'Кубань в древности',
         description: 'История Кубани от каменного века до Античности',
-        icon: Building,
+        icon: '/images/pot.svg',
         quizFile: '/1/1quiz.json',
         glossaryFile: '/1/1glossary.json',
         topics: [
@@ -978,7 +939,7 @@ const sections: Section[] = [
         id: 'kuban_middle_age',
         title: 'Северо-Западный Кавказ в эпоху средневековья',
         description: 'История региона в средневековье',
-        icon: Building,
+        icon: '/images/swords.svg',
         quizFile: '/2/2quiz.json',
         glossaryFile: '/2/2glossary.json',
         topics: [
@@ -1022,7 +983,7 @@ const sections: Section[] = [
         id: 'kuban18-19',
         title: 'Кубань в ХVIII -  ХIХ вв.',
         description: 'Социально-экономическое и политическое развитие Кубани',
-        icon: Building,
+        icon: '/images/crown.svg',
         quizFile: '/3/3quiz.json',
         glossaryFile: '/3/3glossary.json',
         topics: [
@@ -1093,7 +1054,7 @@ const sections: Section[] = [
         id: 'kuban20-21',
         title: 'Кубань в годы зарождения СССР',
         description: 'Влияние империалистических войн,  революционных потрясений и социалистической модернизации на Кубань',
-        icon: Building,
+        icon: '/images/hammer.svg',
         quizFile: '/4/4quiz.json',
         glossaryFile: '/4/4glossary.json',
         topics: [
@@ -1151,7 +1112,7 @@ const sections: Section[] = [
         id: 'kuban_in_war',
         title: 'Кубань в годы Великой Отечественной войны',
         description: 'Героические страницы в истории кубани',
-        icon: Building,
+        icon: '/images/star.svg',
         quizFile: '/5/5quiz.json',
         glossaryFile: '/5/5glossary.json',
         topics: [
@@ -1365,7 +1326,6 @@ export default function Home() {
             );
         }
 
-        const SectionIcon = currentSection.icon;
         const questions = quiz.questions;
 
         const currentQ = questions[currentQuestion];
@@ -1431,7 +1391,13 @@ export default function Home() {
                         <div className="border border-amber-200 rounded-lg p-6 bg-amber-100 text-center">
                             <div className="flex items-center justify-center gap-3 mb-4">
                                 <div className="p-3 bg-amber-200 rounded-lg">
-                                    <SectionIcon className="w-8 h-8 text-amber-800" />
+                                    {/* ✅ ИЗМЕНЕНО: Используем Image компонент */}
+                                    <Image
+                                        src={currentSection.icon}
+                                        alt={`${currentSection.title} icon`}
+                                        width={32}
+                                        height={32}
+                                    />
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-amber-900">Тест завершен!</h2>
@@ -1681,9 +1647,6 @@ export default function Home() {
 
     // Отображение глоссария
     if (currentSection && isGlossaryMode) {
-        // ✅ Теперь используем переменные, объявленные наверху
-        const SectionIcon = currentSection.icon;
-
         const renderContent = () => {
             if (glossaryLoading) {
                 return <div className="text-center text-amber-700 col-span-full">Загрузка глоссария...</div>;
@@ -1730,7 +1693,13 @@ export default function Home() {
 
                         <div className="flex items-center gap-4 mb-6">
                             <div className="p-3 bg-amber-200 rounded-lg">
-                                <SectionIcon className="w-8 h-8 text-amber-800" />
+                                {/* ✅ ИЗМЕНЕНО: Используем Image компонент */}
+                                <Image
+                                    src={currentSection.icon}
+                                    alt={`${currentSection.title} icon`}
+                                    width={32}
+                                    height={32}
+                                />
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold mb-2 text-amber-900">Глоссарий: {currentSection.title}</h1>
@@ -1749,8 +1718,6 @@ export default function Home() {
 
     // Отображение списка тем в разделе
     if (currentSection) {
-        const SectionIcon = currentSection.icon;
-
         return (
             <div className="min-h-screen bg-amber-50">
                 <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -1766,7 +1733,13 @@ export default function Home() {
                         <div className="flex flex-col gap-6 mb-6">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-amber-200 rounded-lg">
-                                    <SectionIcon className="w-8 h-8 text-amber-800" />
+                                    {/* ✅ ИЗМЕНЕНО: Используем Image компонент */}
+                                    <Image
+                                        src={currentSection.icon}
+                                        alt={`${currentSection.title} icon`}
+                                        width={32}
+                                        height={32}
+                                    />
                                 </div>
                                 <div className="flex-1">
                                     <h1 className="text-3xl font-bold mb-2 text-amber-900">{currentSection.title}</h1>
@@ -1838,8 +1811,6 @@ export default function Home() {
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
                     {sections.map((section) => {
-                        const SectionIcon = section.icon;
-
                         return (
                             <div
                                 key={section.id}
@@ -1849,7 +1820,13 @@ export default function Home() {
                                 <div className="mb-4">
                                     <div className="flex items-center gap-4">
                                         <div className="p-3 bg-amber-200 rounded-lg">
-                                            <SectionIcon className="w-8 h-8 text-amber-800" />
+                                            {/* ✅ ИЗМЕНЕНО: Используем Image компонент */}
+                                            <Image
+                                                src={section.icon}
+                                                alt={`${section.title} icon`}
+                                                width={32}
+                                                height={32}
+                                            />
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-semibold text-amber-900">{section.title}</h3>
@@ -1874,6 +1851,4 @@ export default function Home() {
             </div>
         </div>
     );
-
-
 }
