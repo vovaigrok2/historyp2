@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     themeColor: "#92400e",
     manifest: "Manifest.json",
     icons: {
-        icon: "/icons/icon-192x192.png",
-        apple: "/icons/icon-192x192.png"
+        icon: "/icons/icon_192x192.png",
+        apple: "/icons/icon_192x192.png"
     }
 };
